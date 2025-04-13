@@ -3,6 +3,18 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import { leerRecetas,crearReceta,borrarReceta,editarReceta } from "./db.js";
+import multer from "multer";
+
+const storage = multer.diskStorage({
+  destination: function (peticion, fichero, callback) {
+    callback(null, "public/uploads");
+  },
+  filename: function (peticion, fichero, callback) {
+    callback(null, fichero.originalname);
+  }
+});
+
+const upload = multer({ storage });
 
 const servidor = express();
 
@@ -14,6 +26,8 @@ servidor.use(express.json());
 if(process.env.PRUEBAS){
     servidor.use("/pruebas",express.static("./pruebas"))
 };
+
+servidor.use("/uploads", express.static("public/uploads"));
 
 //Definición de rutas
 
@@ -34,9 +48,10 @@ servidor.get("/recetas", async (peticion,respuesta) => {
     }
 });
 
-servidor.post("/recetas/nueva", async (peticion,respuesta,siguiente) => {
+servidor.post("/recetas/nueva",  upload.single("img"), async (peticion,respuesta,siguiente) => {
 
-    let {receta,ingredientes, elaboracion, img, categoria} = peticion.body;
+    let { receta, ingredientes, elaboracion, categoria } = peticion.body;
+    let imagen = peticion.file ? `/uploads/${peticion.file.originalname}` : "/uploads/default.png";
 
     if(receta != undefined){
         receta = receta.toString();
@@ -48,9 +63,9 @@ servidor.post("/recetas/nueva", async (peticion,respuesta,siguiente) => {
 
         try{
 
-            let id = await crearReceta(receta,ingredientes, elaboracion, img, categoria);
+            let id = await crearReceta(receta,ingredientes, elaboracion, imagen, categoria);
 
-            return respuesta.json({id});
+            return respuesta.json({id, img: imagen});
 
         }catch(error){
             respuesta.status(500);
@@ -64,7 +79,7 @@ servidor.post("/recetas/nueva", async (peticion,respuesta,siguiente) => {
 
 });
 
-servidor.delete("/recetas/borrar/:id([a-f0-9]{24})", async (peticion,respuesta,siguiente) => { //restringe :id a solo números (0-9 y al menos un dígito(+))
+servidor.delete("/recetas/borrar/:id([a-f0-9]{24})", async (peticion,respuesta,siguiente) => { 
    try{
 
         let count = await borrarReceta(peticion.params.id);
@@ -85,9 +100,11 @@ servidor.delete("/recetas/borrar/:id([a-f0-9]{24})", async (peticion,respuesta,s
     
 });
 
-servidor.put("/recetas/editar/texto/:id([a-f0-9]{24})", async (peticion,respuesta,siguiente) => {
+servidor.put("/recetas/editar/:id([a-f0-9]{24})", upload.single("img"), async (peticion,respuesta,siguiente) => {
+
     
-    let {receta,ingredientes, elaboracion, img, categoria} = peticion.body;
+    let { receta, ingredientes, elaboracion, categoria } = peticion.body;
+    let nuevaImagen = peticion.file ? `/uploads/${peticion.file.originalname}` : peticion.body.img;
 
     if(receta != undefined){
         receta = receta.toString();
@@ -97,15 +114,13 @@ servidor.put("/recetas/editar/texto/:id([a-f0-9]{24})", async (peticion,respuest
 
     if(valido){
         try{
+            
+            let imagen = nuevaImagen || peticion.body.img;
+            let count = await editarReceta(peticion.params.id, receta, ingredientes, elaboracion, imagen, categoria);
 
-            let count = await editarReceta(peticion.params.id, receta, ingredientes, elaboracion, img, categoria);
-
-            if(count){
-                respuesta.status(204);
-                return respuesta.send("");
+            if (count == 1) {
+                return respuesta.status(200).json({ img: nuevaImagen });
             }
-
-            siguiente();
 
         }catch(error){
 
