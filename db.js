@@ -10,14 +10,14 @@ function conectar(){
 }
 
 
-export function leerRecetas(){
+export function leerRecetas(usuarioID){
     return new Promise((ok,ko) => {
         conectar()
         .then(conexion => {
 
             let coleccion = conexion.db("recetas").collection("recetas");
 
-            coleccion.find({}).toArray()
+            coleccion.find({ usuarioID }).toArray()
             .then( recetas => {
                 conexion.close();
                 ok(recetas.map( ({_id,receta,ingredientes,elaboracion,img,categoria}) => {
@@ -36,14 +36,14 @@ export function leerRecetas(){
 }
 
 
-export function crearReceta(receta,ingredientes,elaboracion,img,categoria){
+export function crearReceta(receta,ingredientes,elaboracion,img,categoria,usuarioID){
     return new Promise((ok,ko) => {
         conectar()
         .then(conexion => {
 
             let coleccion = conexion.db("recetas").collection("recetas");
 
-            coleccion.insertOne({receta,ingredientes,elaboracion,img,categoria})
+            coleccion.insertOne({receta,ingredientes,elaboracion,img,categoria,usuarioID})
             .then( ({insertedId}) => {
                 conexion.close();
                 ok(insertedId);

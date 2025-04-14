@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config(); 
 import express from "express";
 import cors from "cors";
+import session from "express-session";
 import { leerRecetas,crearReceta,borrarReceta,editarReceta } from "./db.js";
 import multer from "multer";
 
@@ -16,9 +17,27 @@ const upload = multer({ storage });
 
 const servidor = express();
 
-servidor.use(cors()); 
+const usuarios = [
+    { usuario: process.env.USUARIO1, contraseña: process.env.CONTRASENA1 },
+    { usuario: process.env.USUARIO2, contraseña: process.env.CONTRASENA2 }
+  ];
+
+servidor.use(cors({
+    origin: 'http://localhost:5173', // Especificar el origen del frontend
+    credentials: true, // Permitir el envío de cookies o encabezados de autenticación
+  })); 
 
 servidor.use(express.json());
+
+servidor.use(session({
+    secret: "abc123", 
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false,
+      httpOnly: true
+    }
+  }));
 
 //Si la variable de entorno PRUEBAS está definida, se habilita /pruebas, que servirá archivos estáticos desde la carpeta ./pruebas.
 if(process.env.PRUEBAS){
@@ -33,7 +52,9 @@ servidor.use("/uploads", express.static("public/uploads"));
 servidor.get("/recetas", async (peticion,respuesta) => {
     try{
 
-        let recetas = await leerRecetas();
+        let usuarioID = peticion.session.usuario;
+
+        let recetas = await leerRecetas(usuarioID);
 
         respuesta.json(recetas);
 
@@ -46,10 +67,33 @@ servidor.get("/recetas", async (peticion,respuesta) => {
     }
 });
 
+servidor.post("/login", (peticion, respuesta) => {
+    const { usuario, contraseña } = peticion.body;
+  
+    const encontrado = usuarios.find(u => u.usuario == usuario && u.contraseña == contraseña);
+  
+    if (encontrado) {
+      peticion.session.usuario = usuario;
+      return respuesta.json({ ok: true });
+    }
+  
+    respuesta.status(401).json({ error: "Credenciales incorrectas" });
+  });
+  
+
+  servidor.post("/logout", (peticion, respuesta) => {
+    peticion.session.destroy(() => {
+      respuesta.json({ ok: true });
+    });
+  });
+  
+
 servidor.post("/recetas/nueva",  upload.single("img"), async (peticion,respuesta,siguiente) => {
 
     let { receta, ingredientes, elaboracion, categoria } = peticion.body;
     let imagen = peticion.file ? `/uploads/${peticion.file.originalname}` : "/uploads/default.png";
+    let usuarioID = peticion.session.usuario; 
+
 
     if(receta != undefined){
         receta = receta.toString();
@@ -61,7 +105,7 @@ servidor.post("/recetas/nueva",  upload.single("img"), async (peticion,respuesta
 
         try{
 
-            let id = await crearReceta(receta,ingredientes, elaboracion, imagen, categoria);
+            let id = await crearReceta(receta,ingredientes, elaboracion, imagen, categoria, usuarioID);
 
             return respuesta.json({id, img: imagen});
 
