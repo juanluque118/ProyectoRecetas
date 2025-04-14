@@ -6,9 +6,7 @@ import { leerRecetas,crearReceta,borrarReceta,editarReceta } from "./db.js";
 import multer from "multer";
 
 const storage = multer.diskStorage({
-  destination: function (peticion, fichero, callback) {
-    callback(null, "public/uploads");
-  },
+  destination:"./public/uploads",
   filename: function (peticion, fichero, callback) {
     callback(null, fichero.originalname);
   }
