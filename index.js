@@ -32,7 +32,7 @@ servidor.use(express.json());
 servidor.use(session({
     secret: "abc123", 
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     cookie: {
       secure: false,
       httpOnly: true
@@ -53,8 +53,9 @@ servidor.get("/recetas", async (peticion,respuesta) => {
     try{
 
         let usuarioID = peticion.session.usuario;
+        let categoria = peticion.query.categoria;
 
-        let recetas = await leerRecetas(usuarioID);
+        let recetas = await leerRecetas(usuarioID,categoria);
 
         respuesta.json(recetas);
 
