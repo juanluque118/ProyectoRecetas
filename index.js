@@ -24,7 +24,7 @@ const usuarios = [
 
 servidor.use(cors({
     origin: 'http://localhost:5173', // Especificar el origen del frontend
-    credentials: true, // Permitir el envío de cookies o encabezados de autenticación
+    credentials: true // Permitir el envío de cookies o encabezados de autenticación
   })); 
 
 servidor.use(express.json());
@@ -32,7 +32,7 @@ servidor.use(express.json());
 servidor.use(session({
     secret: "abc123", 
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     cookie: {
       secure: false,
       httpOnly: true
@@ -46,16 +46,44 @@ if(process.env.PRUEBAS){
 
 servidor.use("/uploads", express.static("public/uploads"));
 
-//Definición de rutas
+//Login y logout
 
+servidor.post("/login", (peticion, respuesta) => {
+    const { usuario, contraseña } = peticion.body;
+    const encontrado = usuarios.find(
+      (u) => u.usuario === usuario && u.contraseña === contraseña
+    );
+
+    if (encontrado) {
+        peticion.session.usuario = usuario;
+        return respuesta.json({ ok: true });
+    }
+    respuesta.status(401).json({ error: "Credenciales incorrectas" });
+});
+
+servidor.get("/usuario", (peticion, respuesta) => {
+    if (peticion.session.usuario) {
+      respuesta.json({ usuario: peticion.session.usuario });
+    } else {
+      respuesta.status(401).json({ error: "No autenticado" });
+    }
+});
+  
+servidor.post("/logout", (peticion, respuesta) => {
+    peticion.session.destroy(() => {
+      respuesta.json({ ok: true });
+    });
+});
+
+
+  //Definición de rutas
 
 servidor.get("/recetas", async (peticion,respuesta) => {
     try{
 
         let usuarioID = peticion.session.usuario;
-        let categoria = peticion.query.categoria;
 
-        let recetas = await leerRecetas(usuarioID,categoria);
+        let recetas = await leerRecetas(usuarioID);
 
         respuesta.json(recetas);
 
@@ -67,26 +95,6 @@ servidor.get("/recetas", async (peticion,respuesta) => {
 
     }
 });
-
-servidor.post("/login", (peticion, respuesta) => {
-    const { usuario, contraseña } = peticion.body;
-  
-    const encontrado = usuarios.find(u => u.usuario == usuario && u.contraseña == contraseña);
-  
-    if (encontrado) {
-      peticion.session.usuario = usuario;
-      return respuesta.json({ ok: true });
-    }
-  
-    respuesta.status(401).json({ error: "Credenciales incorrectas" });
-  });
-  
-
-  servidor.post("/logout", (peticion, respuesta) => {
-    peticion.session.destroy(() => {
-      respuesta.json({ ok: true });
-    });
-  });
   
 
 servidor.post("/recetas/nueva",  upload.single("img"), async (peticion,respuesta,siguiente) => {
@@ -179,6 +187,7 @@ servidor.use((error,peticion,respuesta,siguiente) => {
     respuesta.status(400);
     respuesta.json({ error : "Error en la petición" })
 });
+
 
 servidor.use((peticion,respuesta) => { //Al no tener url entra cualquier peticion, y si llega aqui es porque no encajo con los anteriones middlewares
     respuesta.status(404);

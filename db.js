@@ -10,19 +10,14 @@ function conectar(){
 }
 
 
-export function leerRecetas(usuarioID, categoria = null){
+export function leerRecetas(usuarioID){
     return new Promise((ok,ko) => {
         conectar()
         .then(conexion => {
 
             let coleccion = conexion.db("recetas").collection("recetas");
 
-            let filtro = { usuarioID };
-            if (categoria) {
-                filtro.categoria = categoria;
-            }
-
-            coleccion.find(filtro).toArray()
+            coleccion.find({ usuarioID }).toArray()
             .then( recetas => {
                 conexion.close();
                 ok(recetas.map( ({_id,receta,ingredientes,elaboracion,img,categoria}) => {
