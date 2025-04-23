@@ -34,7 +34,7 @@ servidor.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: "production",
+        secure: true,
         httpOnly: true,
         sameSite: 'none'
       }
