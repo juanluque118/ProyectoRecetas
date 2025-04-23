@@ -34,9 +34,11 @@ servidor.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
-      httpOnly: true
-    }
+        secure: true,
+        httpOnly: true,
+        sameSite: 'none'
+      }
+      
   }));
 
 
