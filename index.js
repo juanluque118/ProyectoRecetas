@@ -23,7 +23,7 @@ const usuarios = [
   ];
 
 servidor.use(cors({
-    origin: 'http://localhost:5173', // Especificar el origen del frontend
+    origin: 'https://lacocinade.onrender.com', // Especificar el origen del frontend
     credentials: true // Permitir el envío de cookies o encabezados de autenticación
   })); 
 
