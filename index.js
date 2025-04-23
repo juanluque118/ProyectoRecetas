@@ -39,10 +39,6 @@ servidor.use(session({
     }
   }));
 
-//Si la variable de entorno PRUEBAS está definida, se habilita /pruebas, que servirá archivos estáticos desde la carpeta ./pruebas.
-if(process.env.PRUEBAS){
-    servidor.use("/pruebas",express.static("./pruebas"))
-};
 
 servidor.use("/uploads", express.static("public/uploads"));
 
