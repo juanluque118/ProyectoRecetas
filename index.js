@@ -29,6 +29,8 @@ servidor.use(cors({
 
 servidor.use(express.json());
 
+servidor.set('trust proxy', 1);
+
 servidor.use(session({
     secret: "abc123", 
     resave: false,
