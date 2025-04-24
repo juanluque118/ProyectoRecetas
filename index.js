@@ -5,14 +5,23 @@ import cors from "cors";
 import session from "express-session";
 import { leerRecetas,crearReceta,borrarReceta,editarReceta } from "./db.js";
 import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 
-const storage = multer.diskStorage({
-  destination:"./public/uploads",
-  filename: function (peticion, fichero, callback) {
-    callback(null, fichero.originalname);
-  }
-});
-
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.CLOUD_API_KEY,
+    api_secret: process.env.CLOUD_API_SECRET
+  });
+  
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+      folder: 'recetas',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+    }
+  });
+  
 const upload = multer({ storage });
 
 const servidor = express();
@@ -100,7 +109,7 @@ servidor.get("/recetas", async (peticion,respuesta) => {
 servidor.post("/recetas/nueva",  upload.single("img"), async (peticion,respuesta,siguiente) => {
 
     let { receta, ingredientes, elaboracion, categoria } = peticion.body;
-    let imagen = peticion.file ? `/uploads/${peticion.file.originalname}` : "/uploads/default.png";
+    let imagen = peticion.file ? peticion.file.path : "/uploads/default.png";
     let usuarioID = peticion.session.usuario; 
 
 
@@ -155,7 +164,8 @@ servidor.put("/recetas/editar/:id([a-f0-9]{24})", upload.single("img"), async (p
 
     
     let { receta, ingredientes, elaboracion, categoria } = peticion.body;
-    let nuevaImagen = peticion.file ? `/uploads/${peticion.file.originalname}` : peticion.body.img;
+    let nuevaImagen = peticion.file ? peticion.file.path : peticion.body.img;
+
 
     if(receta != undefined){
         receta = receta.toString();
