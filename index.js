@@ -44,7 +44,7 @@ const usuarios = [
 
 // CORS
 servidor.use(cors({
-    origin: 'https://lacocinade.onrender.com',
+    origin: 'https://lacocinade.onrender.com/',
     credentials: true // Permite el envío de cookies
   })); 
 
