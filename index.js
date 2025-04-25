@@ -4,12 +4,14 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import session from "express-session";
-
+// Para guardar sesiones en MongoDB
 import MongoStore from "connect-mongo";
 
 import { leerRecetas,crearReceta,borrarReceta,editarReceta } from "./db.js";
 
-import multer from "multer";
+import multer from "multer"; //Permite recibir imágenes desde formularios.
+
+// Servicio para alojar imágenes en la nube.
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 
@@ -33,6 +35,7 @@ const upload = multer({ storage });
 // Configuración del servidor
 const servidor = express();
 
+// Usuarios disponibles para iniciar sesión
 const usuarios = [
     { usuario: process.env.USUARIO1, contraseña: process.env.CONTRASENA1 },
     { usuario: process.env.USUARIO2, contraseña: process.env.CONTRASENA2 },
@@ -41,13 +44,14 @@ const usuarios = [
 
 // CORS
 servidor.use(cors({
-    origin: 'https://lacocinade.onrender.com', // Especificar el origen del frontend
-    credentials: true // Permitir el envío de cookies
+    origin: 'https://lacocinade.onrender.com',
+    credentials: true // Permite el envío de cookies
   })); 
 
+// JSON
 servidor.use(express.json());
 
-// Necesario para HTTPS en Render
+// Necesario en Render para que (secure: true) en cookies funcione correctamente con HTTPS.
 servidor.set('trust proxy', 1);
 
 // Configuracion de sesiones con mongo
@@ -56,7 +60,7 @@ servidor.use(session({
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-        mongoUrl: process.env.DB_URL,
+        mongoUrl: process.env.DB_URL, // Guardo sesiones en MongoDB
         ttl: 3600 // Duración de la sesión en segundos (1 hora)
       }),
     cookie: {
@@ -68,16 +72,16 @@ servidor.use(session({
   }));
 
 
-//Login y logout
+// Login y logout
 
 servidor.post("/login", (peticion, respuesta) => {
     const { usuario, contraseña } = peticion.body;
-    const encontrado = usuarios.find(
+    const encontrado = usuarios.find( // Busco el usuario en la lista
       (u) => u.usuario === usuario && u.contraseña === contraseña
     );
 
     if (encontrado) {
-        peticion.session.usuario = usuario; //Guardo el usuario en la sesión
+        peticion.session.usuario = usuario; // Guardo el usuario en la sesión
         return respuesta.json({ ok: true });
     }
     respuesta.status(401).json({ error: "Credenciales incorrectas" });
@@ -85,12 +89,13 @@ servidor.post("/login", (peticion, respuesta) => {
 
 servidor.get("/usuario", (peticion, respuesta) => {
     if (peticion.session.usuario) {
-      respuesta.json({ usuario: peticion.session.usuario });
+      respuesta.json({ usuario: peticion.session.usuario }); // Devuelve el usuario que esté en la sesión.
     } else {
       respuesta.status(401).json({ error: "No autenticado" });
     }
 });
-  
+
+// Salgo de la sesion y me debe redirigir al login
 servidor.post("/logout", (peticion, respuesta) => {
     peticion.session.destroy(() => {
       respuesta.json({ ok: true });
@@ -98,14 +103,14 @@ servidor.post("/logout", (peticion, respuesta) => {
 });
 
 
-  //Definición de rutas
+  // Definición de rutas
 
 servidor.get("/recetas", async (peticion,respuesta) => {
     try{
 
         let usuarioID = peticion.session.usuario;
 
-        let recetas = await leerRecetas(usuarioID); //Cada usuario lee sus recetas
+        let recetas = await leerRecetas(usuarioID); // Cada usuario lee sus recetas
 
         respuesta.json(recetas);
 
@@ -118,9 +123,11 @@ servidor.get("/recetas", async (peticion,respuesta) => {
     }
 });
   
-
+// Sube la imagen a Cloudinary.
+// Crea una receta nueva con los datos recibidos.
+// Si no se envía una imagen, usa una imagen por defecto.
 servidor.post("/recetas/nueva",  upload.single("img"), async (peticion,respuesta,siguiente) => {
-
+    
     let { receta, ingredientes, elaboracion, categoria } = peticion.body;
     let imagen = peticion.file ? peticion.file.path : "https://res.cloudinary.com/dahrsea95/image/upload/v1745574510/default_lhu2xg.png";
     let usuarioID = peticion.session.usuario; 
@@ -152,6 +159,7 @@ servidor.post("/recetas/nueva",  upload.single("img"), async (peticion,respuesta
 
 });
 
+// Borra la receta del ID indicado.
 servidor.delete("/recetas/borrar/:id([a-f0-9]{24})", async (peticion,respuesta,siguiente) => { 
    try{
 
@@ -173,6 +181,7 @@ servidor.delete("/recetas/borrar/:id([a-f0-9]{24})", async (peticion,respuesta,s
     
 });
 
+// Permite actualizar una receta existente (incluyendo su imagen si se cambia).
 servidor.put("/recetas/editar/:id([a-f0-9]{24})", upload.single("img"), async (peticion,respuesta,siguiente) => {
 
     
@@ -206,16 +215,17 @@ servidor.put("/recetas/editar/:id([a-f0-9]{24})", upload.single("img"), async (p
 });
 
 
+// Al no tener url entra cualquier peticion, y si llega aqui es porque no encajo con los anteriones middlewares
+
 servidor.use((error,peticion,respuesta,siguiente) => {
     respuesta.status(400);
     respuesta.json({ error : "Error en la petición" })
 });
 
-
-servidor.use((peticion,respuesta) => { //Al no tener url entra cualquier peticion, y si llega aqui es porque no encajo con los anteriones middlewares
+servidor.use((peticion,respuesta) => { 
     respuesta.status(404);
     respuesta.json({ error : "Recurso no encontrado" })
 });
 
-
+// Escucha en el puerto asignado por Render
 servidor.listen(process.env.PORT);
