@@ -5,13 +5,15 @@ import express from "express";
 import cors from "cors";
 import session from "express-session";
 
+import MongoStore from "connect-mongo";
+
 import { leerRecetas,crearReceta,borrarReceta,editarReceta } from "./db.js";
 
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 
-//Configuración de Cloudinary (para imágenes)
+// Configuración de Cloudinary (para imágenes)
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
     api_key: process.env.CLOUD_API_KEY,
@@ -28,7 +30,7 @@ const storage = new CloudinaryStorage({
   
 const upload = multer({ storage });
 
-//Configuración del servidor
+// Configuración del servidor
 const servidor = express();
 
 const usuarios = [
@@ -37,29 +39,34 @@ const usuarios = [
     { usuario: process.env.USUARIO3, contraseña: process.env.CONTRASENA3 }
   ];
 
+// CORS
 servidor.use(cors({
     origin: 'https://lacocinade.onrender.com', // Especificar el origen del frontend
-    credentials: true // Permitir el envío de cookies o encabezados de autenticación
+    credentials: true // Permitir el envío de cookies
   })); 
 
 servidor.use(express.json());
 
+// Necesario para HTTPS en Render
 servidor.set('trust proxy', 1);
 
+// Configuracion de sesiones con mongo
 servidor.use(session({
     secret: "abc123", 
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.DB_URL,
+        ttl: 3600 // Duración de la sesión en segundos (1 hora)
+      }),
     cookie: {
         secure: true,
         httpOnly: true,
-        sameSite: 'none'
+        sameSite: 'none' // Permite cookies cross-site para Safari
       }
       
   }));
 
-
-servidor.use("/uploads", express.static("public/uploads"));
 
 //Login y logout
 
@@ -70,7 +77,7 @@ servidor.post("/login", (peticion, respuesta) => {
     );
 
     if (encontrado) {
-        peticion.session.usuario = usuario;
+        peticion.session.usuario = usuario; //Guardo el usuario en la sesión
         return respuesta.json({ ok: true });
     }
     respuesta.status(401).json({ error: "Credenciales incorrectas" });
@@ -98,7 +105,7 @@ servidor.get("/recetas", async (peticion,respuesta) => {
 
         let usuarioID = peticion.session.usuario;
 
-        let recetas = await leerRecetas(usuarioID);
+        let recetas = await leerRecetas(usuarioID); //Cada usuario lee sus recetas
 
         respuesta.json(recetas);
 
@@ -115,7 +122,7 @@ servidor.get("/recetas", async (peticion,respuesta) => {
 servidor.post("/recetas/nueva",  upload.single("img"), async (peticion,respuesta,siguiente) => {
 
     let { receta, ingredientes, elaboracion, categoria } = peticion.body;
-    let imagen = peticion.file ? peticion.file.path : "/uploads/default.png";
+    let imagen = peticion.file ? peticion.file.path : "https://res.cloudinary.com/dahrsea95/image/upload/v1745574510/default_lhu2xg.png";
     let usuarioID = peticion.session.usuario; 
 
 
