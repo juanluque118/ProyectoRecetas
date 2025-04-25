@@ -1,13 +1,17 @@
 import dotenv from "dotenv"; 
-dotenv.config(); 
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
 import session from "express-session";
+
 import { leerRecetas,crearReceta,borrarReceta,editarReceta } from "./db.js";
+
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 
+//Configuración de Cloudinary (para imágenes)
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
     api_key: process.env.CLOUD_API_KEY,
@@ -24,11 +28,13 @@ const storage = new CloudinaryStorage({
   
 const upload = multer({ storage });
 
+//Configuración del servidor
 const servidor = express();
 
 const usuarios = [
     { usuario: process.env.USUARIO1, contraseña: process.env.CONTRASENA1 },
-    { usuario: process.env.USUARIO2, contraseña: process.env.CONTRASENA2 }
+    { usuario: process.env.USUARIO2, contraseña: process.env.CONTRASENA2 },
+    { usuario: process.env.USUARIO3, contraseña: process.env.CONTRASENA3 }
   ];
 
 servidor.use(cors({

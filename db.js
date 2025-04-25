@@ -1,7 +1,9 @@
+//Cargo variables de entorno desde .env
 import dotenv from "dotenv"; 
-dotenv.config();
-import {MongoClient,ObjectId} from "mongodb";
+dotenv.config(); 
 
+//Me conecto a MongoDB
+import {MongoClient,ObjectId} from "mongodb";
 const urlMongo = process.env.DB_URL;
 
 
@@ -9,6 +11,7 @@ function conectar(){
     return MongoClient.connect(urlMongo);
 }
 
+//Funciones
 
 export function leerRecetas(usuarioID){
     return new Promise((ok,ko) => {
