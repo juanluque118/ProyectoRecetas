@@ -81,7 +81,7 @@ servidor.post("/login", (peticion, respuesta) => {
     );
 
     if (encontrado) {
-        peticion.session.usuario = usuario; // Guardo el usuario en la sesión
+        peticion.session.usuario = usuario.toLowerCase(); // Guardo el usuario en la sesión en minuscula.
         return respuesta.json({ ok: true });
     }
     respuesta.status(401).json({ error: "Credenciales incorrectas" });
