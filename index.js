@@ -39,7 +39,8 @@ const servidor = express();
 const usuarios = [
     { usuario: process.env.USUARIO1, contraseña: process.env.CONTRASENA1 },
     { usuario: process.env.USUARIO2, contraseña: process.env.CONTRASENA2 },
-    { usuario: process.env.USUARIO3, contraseña: process.env.CONTRASENA3 }
+    { usuario: process.env.USUARIO3, contraseña: process.env.CONTRASENA3 },
+    { usuario: process.env.USUARIO4, contraseña: process.env.CONTRASENA4 }
   ];
 
 // CORS
