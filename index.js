@@ -108,7 +108,7 @@ servidor.post("/logout", (peticion, respuesta) => {
 servidor.get("/recetas", async (peticion,respuesta) => {
     try{
 
-        let usuarioID = peticion.session.usuario;
+        let usuarioID = peticion.query.usuarioID || peticion.session.usuario;
 
         let recetas = await leerRecetas(usuarioID); // Cada usuario lee sus recetas
 
@@ -130,7 +130,7 @@ servidor.post("/recetas/nueva",  upload.single("img"), async (peticion,respuesta
     
     let { receta, ingredientes, elaboracion, categoria } = peticion.body;
     let imagen = peticion.file ? peticion.file.path : "https://res.cloudinary.com/dahrsea95/image/upload/v1745574510/default_lhu2xg.png";
-    let usuarioID = peticion.session.usuario; 
+    let usuarioID = peticion.body.usuarioID || peticion.session.usuario;
 
 
     if(receta != undefined){
